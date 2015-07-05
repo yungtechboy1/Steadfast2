@@ -49,7 +49,7 @@ class MainLogger extends \AttachableThreadedLogger{
 		$this->logFile = $logFile;
 		$this->hasANSI = (bool) $hasANSI;
 		$this->logDebug = (bool) $logDebug;
-		$this->logStream = "";
+		$this->logStream = \ThreadedFactory::create();
 		$this->start(PTHREADS_INHERIT_NONE);
 	}
 
@@ -182,7 +182,7 @@ class MainLogger extends \AttachableThreadedLogger{
 		$now = \time();
 		$message = TextFormat::toANSI(TextFormat::AQUA . \date("H:i:s", $now) . TextFormat::RESET . " " . $message . TextFormat::RESET . \PHP_EOL);
 		$cleanMessage = TextFormat::clean(\preg_replace('/\x1b\[[0-9;]*m/', "", $message));
-
+                
 		if(!$this->hasANSI){
 			echo $cleanMessage;
 		}else{
@@ -193,13 +193,37 @@ class MainLogger extends \AttachableThreadedLogger{
 			$this->attachment->call($level, $message);
 		}
 
-		$this->logStream .= \date("Y-m-d", $now) . " " . $cleanMessage;
-		$this->synchronized(function(){
-			$this->notify();
-		});
+		$this->logStream[] = date("Y-m-d", $now) . " " . $cleanMessage . "\n";
+		if($this->logStream->count() >= 5){
+			$this->synchronized(function(){
+				$this->notify();
+			});
+		}
 	}
 
 	public function run(){
 		$this->shutdown = \false;
+                if(!is_resource($this->logResource)){
+			throw new \RuntimeException("Couldn't open log file");
+		}
+
+		while($this->shutdown === false){
+			$this->synchronized(function(){
+				while($this->logStream->count() > 0){
+					$chunk = $this->logStream->shift();
+					fwrite($this->logResource, $chunk);
+				}
+
+				$this->wait(25000);
+			});
+		}
+                if($this->logStream->count() > 0){
+			while($this->logStream->count() > 0){
+				$chunk = $this->logStream->shift();
+				fwrite($this->logResource, $chunk);
+			}
+		}
+
+		fclose($this->logResource);
 	}
 }

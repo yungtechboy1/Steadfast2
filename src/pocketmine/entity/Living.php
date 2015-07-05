@@ -114,7 +114,7 @@ abstract class Living extends Entity implements Damageable{
 			$deltaX = $this->x - $e->x;
 			$deltaZ = $this->z - $e->z;
 			$yaw = \atan2($deltaX, $deltaZ);
-			$this->knockBack($e, $damage, \sin($yaw), \cos($yaw), $source->getKnockBack());
+			$this->knockBack($e, $damage,  sin($yaw), cos($yaw), $source->getKnockBack());
 		}
 
 		$pk = new EntityEventPacket();

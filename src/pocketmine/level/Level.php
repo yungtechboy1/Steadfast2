@@ -660,7 +660,7 @@ class Level implements ChunkManager, Metadatable{
 				$pk->records[] = [$b->x, $b->z, $b->y, $fullBlock >> 4, $fullBlock & 0xf, $flags];
 			}
 		}
-		Server::broadcastPacket($target, $pk->setChannel(Network::CHANNEL_BLOCKS));
+		Server::broadcastPacket($target, $pk->setChannel(Network::CHANNEL_PRIORITY));
 	}
 
 	public function clearCache(){
@@ -1192,17 +1192,27 @@ class Level implements ChunkManager, Metadatable{
 			if(ADVANCED_CACHE == \true){
 				Cache::remove("world:" . $this->getId() . ":" . $index);
 			}
-
+                        
 			if($direct === \true){
-				$pk = new UpdateBlockPacket();
-				$pk->x = $pos->x;
-				$pk->y = $pos->y;
-				$pk->z = $pos->z;
-				$pk->block = $block->getId();
-				$pk->meta = $block->getDamage();
-
-				Server::broadcastPacket($this->getUsingChunk($pos->x >> 4, $pos->z >> 4), $pk);
-			}else{
+                                $this->sendBlocks($this->getPlayers(), [$block], UpdateBlockPacket::FLAG_ALL_PRIORITY);
+                                unset($this->chunkCache[$index]);
+                            // //x, z, y, blockId, blockData, flags
+				/*$pk = new UpdateBlockPacket();
+                                $pk->records[] = [$pos->x,$pos->z,$pos->y,$block->getId(),$block->getDamage(), UpdateBlockPacket::FLAG_ALL_PRIORITY];
+				//Server::broadcastPacket($this->getUsingChunk($pos->x >> 4, $pos->z >> 4), $pk);
+                                $packet = $pk;
+                                $packet->encode();
+                                $packet->isEncoded = true;
+                                foreach($this->getUsingChunk($pos->x >> 4, $pos->z >> 4) as $player){
+                                        $player->dataPacket($packet);
+                                        echo "SENT";
+                                }
+                                if(isset($packet->__encapsulatedPacket)){
+                                        unset($packet->__encapsulatedPacket);
+                                }*/
+                                
+                                
+                            }else{
 				if(!($pos instanceof Position)){
 					$pos = $this->temporalPosition->setComponents($pos->x, $pos->y, $pos->z);
 				}
@@ -1474,7 +1484,7 @@ class Level implements ChunkManager, Metadatable{
 				return \false;
 			}
 		}
-
+$block->place($item, $block, $target, $face, $fx, $fy, $fz);
 		if($hand->place($item, $block, $target, $face, $fx, $fy, $fz, $player) === \false){
 			return \false;
 		}

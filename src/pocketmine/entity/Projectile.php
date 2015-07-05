@@ -54,7 +54,9 @@ abstract class Projectile extends Entity{
 
 
 	public function attack($damage, EntityDamageEvent $source){
-
+            if($source->getCause() === EntityDamageEvent::CAUSE_VOID){
+                parent::attack($damage, $source);
+            }
 	}
 
 	protected function initEntity(){
@@ -96,7 +98,7 @@ abstract class Projectile extends Entity{
 				$this->motionY -= $this->gravity;
 			}
 
-			$this->keepMovement = $this->checkObstruction($this->x, ($this->boundingBox->minY + $this->boundingBox->maxY) / 2, $this->z);
+			//$this->keepMovement = $this->checkObstruction($this->x, ($this->boundingBox->minY + $this->boundingBox->maxY) / 2, $this->z);
 
 			$moveVector = new Vector3($this->x + $this->motionX, $this->y + $this->motionY, $this->z + $this->motionZ);
 

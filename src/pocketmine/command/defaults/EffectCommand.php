@@ -31,6 +31,11 @@ class EffectCommand extends VanillaCommand{
 
 	public function __construct($name){
 		$this->setPermission("pocketmine.command.effect");
+                parent::__construct(
+			$name,
+			"Effect Players",
+			"/effect"
+		);
 	}
 
 	public function execute(CommandSender $sender, $currentAlias, array $args){

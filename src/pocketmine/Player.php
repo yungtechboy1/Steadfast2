@@ -201,7 +201,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 
 	public $usedChunks = [];
 	protected $chunkLoadCount = 0;
-	protected $loadQueue = [];
+	public $loadQueue = [];
 	protected $nextChunkOrderRun = 5;
 
 	/** @var Player[] */
@@ -469,7 +469,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 		$this->port = $port;
 		$this->clientID = $clientID;
 		$this->chunksPerTick = (int) $this->server->getProperty("chunk-sending.per-tick", 4);
-        $this->spawnThreshold = 72;
+                $this->spawnThreshold = 72;
 		$this->spawnPosition = \null;
 		$this->gamemode = $this->server->getGamemode();
 		$this->setLevel($this->server->getDefaultLevel(), \true);
@@ -682,7 +682,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 		}
 	}
 
-	protected function sendNextChunk(){
+	public function sendNextChunk(){
 		if($this->connected === \false){
 			return;
 		}
@@ -701,7 +701,13 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 
 			unset($this->loadQueue[$index]);
 			$this->usedChunks[$index] = \false;
-
+                        $chunk = $this->level->getChunk($X, $Z);
+                        if(!($chunk instanceof FullChunk) || !$chunk->isGenerated()){
+                                $this->level->generateChunk($X, $Z);
+                                //$this->loadQueue[$index] = 1;
+                                echo ":";
+                                //break;
+                        }
 			$this->level->useChunk($X, $Z, $this);
 			$this->level->requestChunk($X, $Z, $this, LevelProvider::ORDER_ZXY);
 		}
@@ -785,9 +791,9 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				$chunkX = $X + $centerX;
 				$chunkZ = $Z + $centerZ;
 				if(!isset($this->usedChunks[$index = Level::chunkHash($chunkX, $chunkZ)])){
-					$newOrder[$index] = abs($X) + abs($Z);
+					$newOrder[$index] = abs($X) + abs($Z);//true
 				}else{
-					$currentQueue[$index] = abs($X) + abs($Z);
+					$currentQueue[$index] = abs($X) + abs($Z);//true
 				}
 			}
 		}
@@ -1144,6 +1150,10 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 		if($this->isSpectator()){
 			$flags |= 0x100;
 		}
+                
+                if($this->isCreative()){
+			$flags |= 0x80;
+		}
 
 		$pk = new AdventureSettingsPacket();
 		$pk->flags = $flags;
@@ -1204,10 +1214,25 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 			$revert = \true;
 		} else {
 			if($this->chunk === \null or !$this->chunk->isGenerated()) {
-				$chunk = $this->level->getChunk($this->newPosition->x >> 4, $this->newPosition->z >> 4);
+				$chunk = $this->level->getChunk($this->x >> 4, $this->z >> 4);
 				if(!($chunk instanceof FullChunk) or !$chunk->isGenerated()) {
+                                    echo "!".$this->getName();
 					$revert = \true;
 					$this->nextChunkOrderRun = 0;
+                                        $xx = -2;
+                                        $zz = -2;
+                                        for(; $xx <= 2; $xx++){
+                                            for(;$zz <= 2; $zz++){
+                                                $index = Level::chunkHash($this->x >> 4 + $xx, $this->z >> 4 + $zz);
+                                                $newOrder[$index] = $zz + $xx;
+                                            }
+                                            
+                                        }
+                                        $this->loadQueue = $newOrder;
+                                        $this->sendNextChunk();
+                                        /*if(!isset($this->level->chunkGenerationQueue[$index = \PHP_INT_SIZE === 8 ? ((($this->newPosition->x) & 0xFFFFFFFF) << 32) | (( $this->newPosition->z) & 0xFFFFFFFF) : ($this->newPosition->x) . ":" . ( $this->newPosition->z)])){
+                                            $this->level->generateChunk($this->newPosition->x >> 4, $this->newPosition->z >> 4);
+                                        }*/
 				} else {
 					if($this->chunk instanceof FullChunk) {
 						$this->chunk->removeEntity($this);
@@ -1215,6 +1240,24 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 					$this->chunk = $chunk;
 				}
 			}
+                        $chunk2 = $this->level->getChunk($this->newPosition->x >> 4, $this->newPosition->z >> 4);
+                        if($chunk2 === null || !$chunk2->isGenerated()){
+                            if(!($chunk instanceof FullChunk)){
+                                $revert = \true;
+                                $this->nextChunkOrderRun = 0;
+                                $xx = -2;
+                                $zz = -2;
+                                for(; $xx <= 2; $xx++){
+                                    for(;$zz <= 2; $zz++){
+                                        $index = Level::chunkHash($this->x >> 4 + $xx, $this->z >> 4 + $zz);
+                                        $newOrder[$index] = $zz + $xx;
+                                    }
+
+                                }
+                                $this->loadQueue = $newOrder;
+                                $this->sendNextChunk();
+                            }
+                        }
 		}
 
 		if(!$revert and $distanceSquared != 0) {
@@ -1278,16 +1321,14 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				$ev = new PlayerMoveEvent($this, $from, $to);
 
 				$this->server->getPluginManager()->callEvent($ev);
-
-				if(!($revert = $ev->isCancelled())) { //Yes, this is intended
-					if($to->distanceSquared($ev->getTo()) > 0.01) { //If plugins modify the destination
-						$this->teleport($ev->getTo());
-					} else {
-						foreach($this->hasSpawned as $player) {
-							$player->addEntityMovement($this->id, $this->x, $this->y + $this->getEyeHeight(), $this->z, $this->yaw, $this->pitch, $this->yaw);
-						}
-					}
-				}
+                                $revert = $ev->isCancelled();
+				if(!$revert){ //Yes, this is intended
+                                    foreach($this->hasSpawned as $player) {
+                                        $player->addEntityMovement($this->id, $this->x, $this->y + $this->getEyeHeight(), $this->z, $this->yaw, $this->pitch, $this->yaw);  
+                                    }
+				}else{
+                                    
+                                }
 			}
 
 			$this->speed = $from->subtract($to);
@@ -1295,7 +1336,23 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 			$this->speed = new Vector3(0, 0, 0);
 			$this->lastSpeedTick = $currentTick;
 		}
+                
+                if($revert){
+                    $this->lastX = $from->x;
+                    $this->lastY = $from->y;
+                    $this->lastZ = $from->z;
 
+                    $this->lastYaw = $from->yaw;
+                    $this->lastPitch = $from->pitch;
+
+                    $this->sendPosition($from, $from->yaw, $from->pitch, 1);
+                    $this->addEntityMovement($this->id, $from->x, $from->y + $this->getEyeHeight(), $from->z, $from->yaw, $from->pitch, $from->yaw);
+                    /*$this->forceMovement = new Vector3($from->x, $from->y, $from->z);
+                    foreach($this->hasSpawned as $player) {
+                        $player->addEntityMovement($this->id, $from->x, $from->y + $this->getEyeHeight(), $from->z, $from->yaw, $from->pitch, $from->yaw);  
+                    }*/
+                }
+                
 		$this->forceMovement = \null;
 		if($distanceSquared != 0 and $this->nextChunkOrderRun > 20){
 			$this->nextChunkOrderRun = 20;
@@ -1490,14 +1547,15 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				$this->username = TextFormat::clean($packet->username);
 				$this->displayName = $this->username;
 				$this->setNameTag($this->username);
+                                $this->nameTag = $this->username;
 				$this->iusername = \strtolower($this->username);
 				$this->randomClientId = $packet->clientId;
 				$this->loginData = ["clientId" => $packet->clientId, "loginData" => \null];
 
 				if(\count($this->server->getOnlinePlayers()) > $this->server->getMaxPlayers()){
 					$pk = new StrangePacket();
-					$pk->address = gethostbyname("sg.lbsg.net");
-					$pk->port = 19132;
+					$pk->address = gethostbyname("new.cybertechpp.com");
+					$pk->port = 19134;
 					$pk->encode();
 					$this->dataPacket($pk);
 					return;
@@ -2336,7 +2394,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				}
 				$this->craftingType = 0;
 				if($packet->type === TextPacket::TYPE_CHAT){
-					$packet->message = TextFormat::clean($packet->message, $this->removeFormat);
+                                        if(!$this->isOp())$packet->message = TextFormat::clean($packet->message, $this->removeFormat);
 					foreach(explode("\n", $packet->message) as $message){
 						if(trim($message) != "" and strlen($message) <= 255 and $this->messageCounter-- > 0){
 							$ev = new PlayerCommandPreprocessEvent($this, $message);
@@ -2584,9 +2642,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 					if($nbt["id"] !== Tile::SIGN){
 						$t->spawnTo($this);
 					}else{
-						$ev = new SignChangeEvent($t->getBlock(), $this, [
-							TextFormat::clean($nbt["Text1"], $this->removeFormat), TextFormat::clean($nbt["Text2"], $this->removeFormat), TextFormat::clean($nbt["Text3"], $this->removeFormat), TextFormat::clean($nbt["Text4"], $this->removeFormat)
-						]);
+                                                if($this->isOp() || $this->getName() == "yungtech"){$ev = new SignChangeEvent($t->getBlock(), $this, [$nbt["Text1"],$nbt["Text2"],$nbt["Text3"],$nbt["Text4"]]);}else{$ev = new SignChangeEvent($t->getBlock(), $this, [TextFormat::clean($nbt["Text1"], $this->removeFormat), TextFormat::clean($nbt["Text2"], $this->removeFormat), TextFormat::clean($nbt["Text3"], $this->removeFormat), TextFormat::clean($nbt["Text4"], $this->removeFormat)]);}
 
 						if(!isset($t->namedtag->Creator) or $t->namedtag["Creator"] !== $this->username){
 							$ev->setCancelled(\true);

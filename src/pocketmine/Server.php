@@ -238,6 +238,9 @@ class Server{
 
 	/** @var Level */
 	private $levelDefault = \null;
+        
+        /** @var RakLibInterface */
+        public $mainInterface;
 
 	/**
 	 * @return string
@@ -805,7 +808,9 @@ class Server{
 			}
 			\unlink($path . "$name.yml");
 		}
-                $this->saveOfflinePlayerData($name, $nbt);             
+                if($this->getConfigBoolean("save-playerdata", true)) {
+                    $this->saveOfflinePlayerData($name, $nbt);
+                }             
 		return $nbt;
 
 	}
@@ -815,6 +820,9 @@ class Server{
 	 * @param Compound $nbtTag
 	 */
 	public function saveOfflinePlayerData($name, Compound $nbtTag){
+            $nbt = new NBT(NBT::BIG_ENDIAN);
+            $nbt->setData($nbtTag);
+            file_put_contents($this->getDataPath() . "players/" . strtolower($name) . ".dat", $nbt->writeCompressed());
 	}
 
 	/**

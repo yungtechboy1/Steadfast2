@@ -36,11 +36,14 @@ class Arrow extends Projectile{
 	protected $gravity = 0.05;
 	protected $drag = 0.01;
 
-	protected $damage = 6;
+	protected $damage = 3;
+        
+        protected $isCritical;
 
-	public function __construct(FullChunk $chunk, Compound $nbt, Entity $shootingEntity = \null){
+	public function __construct(FullChunk $chunk, Compound $nbt, Entity $shootingEntity = \null, $critical = false){
 		$this->shootingEntity = $shootingEntity;
-		parent::__construct($chunk, $nbt);
+                $this->isCritical = (bool) $critical;
+		parent::__construct($chunk, $nbt, $shootingEntity);
 	}
 
 	public function onUpdate($currentTick){
@@ -51,7 +54,11 @@ class Arrow extends Projectile{
 		$this->timings->startTiming();
 
 		$hasUpdate = parent::onUpdate($currentTick);
-
+                
+                if($this->onGround){
+			$this->isCritical = false;
+		}
+                
 		if($this->age > 1200){
 			$this->kill();
 			$hasUpdate = \true;
