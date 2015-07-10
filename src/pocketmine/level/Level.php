@@ -539,7 +539,6 @@ class Level implements ChunkManager, Metadatable{
 
 		$X = \null;
 		$Z = \null;
-
 		//Do block updates
 		$this->timings->doTickPending->startTiming();
 		while($this->updateQueue->count() > 0 and $this->updateQueue->current()["priority"] <= $currentTick){
@@ -548,7 +547,6 @@ class Level implements ChunkManager, Metadatable{
 			$block->onUpdate(self::BLOCK_UPDATE_SCHEDULED);
 		}
 		$this->timings->doTickPending->stopTiming();
-
 		$this->timings->entityTick->startTiming();
 		//Update entities that need update
 		Timings::$tickEntityTimer->startTiming();
@@ -559,7 +557,6 @@ class Level implements ChunkManager, Metadatable{
 		}
 		Timings::$tickEntityTimer->stopTiming();
 		$this->timings->entityTick->stopTiming();
-
 		$this->timings->tileEntityTick->startTiming();
 		//Update tiles that need update
 		if(\count($this->updateTiles) > 0){
@@ -572,11 +569,9 @@ class Level implements ChunkManager, Metadatable{
 			//Timings::$tickTileEntityTimer->stopTiming();
 		}
 		$this->timings->tileEntityTick->stopTiming();
-
 		$this->timings->doTickTiles->startTiming();
 		$this->tickChunks();
 		$this->timings->doTickTiles->stopTiming();
-
 		if(\count($this->changedCount) > 0){
 			if(\count($this->players) > 0){
 				foreach($this->changedCount as $index => $mini){
@@ -621,9 +616,7 @@ class Level implements ChunkManager, Metadatable{
 			}
 
 		}
-
 		$this->processChunkRequest();
-
 		foreach($this->moveToSend as $index => $entry){
 			Level::getXZ($index, $chunkX, $chunkZ);
 			$pk = new MoveEntityPacket();
@@ -638,7 +631,6 @@ class Level implements ChunkManager, Metadatable{
 			Server::broadcastPacket($this->getChunkPlayers($chunkX, $chunkZ), $pk->setChannel(Network::CHANNEL_MOVEMENT));
 		}
 		$this->motionToSend = [];
-
 		$this->timings->doTick->stopTiming();
 	}
 
@@ -660,7 +652,7 @@ class Level implements ChunkManager, Metadatable{
 				$pk->records[] = [$b->x, $b->z, $b->y, $fullBlock >> 4, $fullBlock & 0xf, $flags];
 			}
 		}
-		Server::broadcastPacket($target, $pk->setChannel(Network::CHANNEL_PRIORITY));
+		Server::broadcastPacket($target, $pk->setChannel(Network::CHANNEL_BLOCKS));
 	}
 
 	public function clearCache(){
@@ -1192,27 +1184,17 @@ class Level implements ChunkManager, Metadatable{
 			if(ADVANCED_CACHE == \true){
 				Cache::remove("world:" . $this->getId() . ":" . $index);
 			}
-                        
+
 			if($direct === \true){
-                                $this->sendBlocks($this->getPlayers(), [$block], UpdateBlockPacket::FLAG_ALL_PRIORITY);
-                                unset($this->chunkCache[$index]);
-                            // //x, z, y, blockId, blockData, flags
-				/*$pk = new UpdateBlockPacket();
-                                $pk->records[] = [$pos->x,$pos->z,$pos->y,$block->getId(),$block->getDamage(), UpdateBlockPacket::FLAG_ALL_PRIORITY];
-				//Server::broadcastPacket($this->getUsingChunk($pos->x >> 4, $pos->z >> 4), $pk);
-                                $packet = $pk;
-                                $packet->encode();
-                                $packet->isEncoded = true;
-                                foreach($this->getUsingChunk($pos->x >> 4, $pos->z >> 4) as $player){
-                                        $player->dataPacket($packet);
-                                        echo "SENT";
-                                }
-                                if(isset($packet->__encapsulatedPacket)){
-                                        unset($packet->__encapsulatedPacket);
-                                }*/
-                                
-                                
-                            }else{
+				$pk = new UpdateBlockPacket();
+				$pk->x = $pos->x;
+				$pk->y = $pos->y;
+				$pk->z = $pos->z;
+				$pk->block = $block->getId();
+				$pk->meta = $block->getDamage();
+
+				Server::broadcastPacket($this->getUsingChunk($pos->x >> 4, $pos->z >> 4), $pk);
+			}else{
 				if(!($pos instanceof Position)){
 					$pos = $this->temporalPosition->setComponents($pos->x, $pos->y, $pos->z);
 				}
@@ -1484,7 +1466,7 @@ class Level implements ChunkManager, Metadatable{
 				return \false;
 			}
 		}
-$block->place($item, $block, $target, $face, $fx, $fy, $fz);
+
 		if($hand->place($item, $block, $target, $face, $fx, $fy, $fz, $player) === \false){
 			return \false;
 		}

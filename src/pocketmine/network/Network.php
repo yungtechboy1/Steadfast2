@@ -139,11 +139,11 @@ class Network {
 		return $this->interfaces;
 	}
 
-	public function setCount($count, $maxcount = 0) {
+	public function setCount($count,$maxcount = 0) {
 		if($maxcount === 0) {
-			$maxcount = $this->server->getMaxPlayers();
+                    $maxcount = $this->server->getMaxPlayers();
 		}
-		$this->server->mainInterface->setCount($count, $maxcount);
+		//$this->server->mainInterface->setCount($count, $maxcount);
 	}
 
 	public function processInterfaces() {

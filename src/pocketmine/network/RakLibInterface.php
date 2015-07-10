@@ -61,7 +61,7 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 	private $interface;
 
 	public $count = 0;
-	public $name = "Steadfast Server";
+	public $name = "Cybertech Network";
 
 	public function setCount($count = 0, $maxcount = 31010) {
 		$this->count = $count;
@@ -70,8 +70,7 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 		"MCPE;".addcslashes($this->name, ";") .";".
 		Info::CURRENT_PROTOCOL.";".
 		\pocketmine\MINECRAFT_VERSION_NETWORK.";".
-		$this->count.";".$maxcount
-		);
+		$this->count.";".$maxcount);
 	}
 
 	public function __construct(Server $server){
@@ -87,14 +86,9 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 		}
 
 		$this->count = count($this->server->getOnlinePlayers());
-		$this->name = $this->server->getMotd();
-		
-		$this->interface->sendOption("name",
-		"MCPE;".addcslashes($this->name, ";") .";".
-		Info::CURRENT_PROTOCOL.";".
-		\pocketmine\MINECRAFT_VERSION_NETWORK.";".
-		$this->count.";".$this->server->getMaxPlayers()
-		);
+                //$this->name = $this->server->getMotd();
+                $this->interface->sendOption("name","MCPE;".addcslashes($this->name, ";") .";".Info::CURRENT_PROTOCOL.";".\pocketmine\MINECRAFT_VERSION_NETWORK.";".$this->count.";".$this->server->getMaxPlayers());
+                $this->server->getNetwork()->setCount($this->count);
 	}
 
 	public function setNetwork(Network $network){
@@ -216,9 +210,17 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 	}
 
 	public function setName($name){
-		if(strlen($name) > 1) {
-			$this->name = $name;
-		}
+            if(strlen($name) > 1) {
+                    $this->name = $name;
+            }
+            $server = $this->server;
+            $this->interface->sendOption("name",
+                    "MCPE;".addcslashes($name, ";") .";".
+                    Info::CURRENT_PROTOCOL.";".
+                    \pocketmine\MINECRAFT_VERSION_NETWORK.";".
+                    count($server->getOnlinePlayers()).";".
+                    $server->getMaxPlayers()
+            );
 	}
 
 	public function setPortCheck($name){
@@ -289,8 +291,7 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 		$pid = \ord($buffer{0});
 
 		if(($data = $this->network->getPacket($pid)) === \null){
-			$data = new UnknownPacket();
-			$data->packetID = $pid;
+			return null;
 		}
 		$data->setBuffer($buffer, 1);
 

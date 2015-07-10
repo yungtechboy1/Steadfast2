@@ -25,6 +25,7 @@ use pocketmine\level\format\FullChunk;
 use pocketmine\nbt\tag\Compound;
 use pocketmine\network\protocol\AddEntityPacket;
 use pocketmine\Player;
+use pocketmine\network\Network;
 
 class Arrow extends Projectile{
 	const NETWORK_ID = 80;
@@ -76,9 +77,11 @@ class Arrow extends Projectile{
 		$pk->x = $this->x;
 		$pk->y = $this->y;
 		$pk->z = $this->z;
-		$pk->did = 0; //TODO: send motion here
-		$player->dataPacket($pk);
-
+		$pk->speedX = $this->motionX;
+		$pk->speedY = $this->motionY;
+		$pk->speedZ = $this->motionZ;
+		$pk->metadata = $this->dataProperties;
+		$player->dataPacket($pk->setChannel(Network::CHANNEL_ENTITY_SPAWNING));
 		$player->addEntityMotion($this->getId(), $this->motionX, $this->motionY, $this->motionZ);
 
 		parent::spawnTo($player);

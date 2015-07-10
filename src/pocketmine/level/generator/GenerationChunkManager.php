@@ -123,8 +123,6 @@ class GenerationChunkManager implements ChunkManager{
 			$this->generator->generateChunk($chunkX, $chunkZ);
 			$this->setChunkGenerated($chunkX, $chunkZ);
 		}catch(\Exception $e){
-                    echo "NOOO\n";
-                    $this->logger->logException($e);
 		}
 	}
 

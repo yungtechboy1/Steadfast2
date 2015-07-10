@@ -238,9 +238,6 @@ class Server{
 
 	/** @var Level */
 	private $levelDefault = \null;
-        
-        /** @var RakLibInterface */
-        public $mainInterface;
 
 	/**
 	 * @return string

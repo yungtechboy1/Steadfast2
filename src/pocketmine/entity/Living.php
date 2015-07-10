@@ -127,13 +127,19 @@ abstract class Living extends Entity implements Damageable{
 
 	public function knockBack(Entity $attacker, $damage, $x, $z, $base = 0.4){
 		$f = \sqrt($x ** 2 + $z ** 2);
+                
+                if($f <= 0){
+			return;
+		}
+		$f = 1 / $f;
 
-		$motion = new Vector3($this->motionX, $this->motionY, $this->motionZ);
-
+		$motion = new Vector3($this->motionX, $this->motionY + .6 , $this->motionZ);
+//Grounf Glitch Here in this FUnction
 		$motion->x /= 2;
 		$motion->y /= 2;
 		$motion->z /= 2;
 		$motion->x += ($x / $f) * $base;
+                //echo $motion->y."--\n";
 		$motion->y += $base;
 		$motion->z += ($z / $f) * $base;
 
