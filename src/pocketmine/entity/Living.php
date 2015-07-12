@@ -114,7 +114,11 @@ abstract class Living extends Entity implements Damageable{
 			$deltaX = $this->x - $e->x;
 			$deltaZ = $this->z - $e->z;
 			$yaw = \atan2($deltaX, $deltaZ);
-			$this->knockBack($e, $damage,  sin($yaw), cos($yaw), $source->getKnockBack());
+			$this->knockBack($e, $damage,  $deltaX, $deltaZ, $source->getKnockBack());
+                        
+                        if($e->isOnFire() > 0){
+				$this->setOnFire(2 * $this->server->getDifficulty());
+			}
 		}
 
 		$pk = new EntityEventPacket();
@@ -126,26 +130,29 @@ abstract class Living extends Entity implements Damageable{
 	}
 
 	public function knockBack(Entity $attacker, $damage, $x, $z, $base = 0.4){
-		$f = \sqrt($x ** 2 + $z ** 2);
+		$f = \sqrt($x * $x + $z * $z);
                 
                 if($f <= 0){
 			return;
 		}
 		$f = 1 / $f;
 
-		$motion = new Vector3($this->motionX, $this->motionY + .6 , $this->motionZ);
+		$motion = new Vector3($this->motionX, $this->motionY , $this->motionZ);
 //Grounf Glitch Here in this FUnction
 		$motion->x /= 2;
 		$motion->y /= 2;
 		$motion->z /= 2;
 		$motion->x += ($x / $f) * $base;
-                //echo $motion->y."--\n";
 		$motion->y += $base;
 		$motion->z += ($z / $f) * $base;
+                echo $motion->x.">>".$motion->y.">>".$motion->z."\n";
 
 		if($motion->y > $base){
+                    echo $motion->y."TO $base\n";
 			$motion->y = $base;
 		}
+                //$motion->y = 2.5;
+
 
 		$this->setMotion($motion);
 	}

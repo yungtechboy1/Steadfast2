@@ -539,6 +539,7 @@ class Level implements ChunkManager, Metadatable{
 
 		$X = \null;
 		$Z = \null;
+
 		//Do block updates
 		$this->timings->doTickPending->startTiming();
 		while($this->updateQueue->count() > 0 and $this->updateQueue->current()["priority"] <= $currentTick){
@@ -547,6 +548,7 @@ class Level implements ChunkManager, Metadatable{
 			$block->onUpdate(self::BLOCK_UPDATE_SCHEDULED);
 		}
 		$this->timings->doTickPending->stopTiming();
+
 		$this->timings->entityTick->startTiming();
 		//Update entities that need update
 		Timings::$tickEntityTimer->startTiming();
@@ -557,6 +559,7 @@ class Level implements ChunkManager, Metadatable{
 		}
 		Timings::$tickEntityTimer->stopTiming();
 		$this->timings->entityTick->stopTiming();
+
 		$this->timings->tileEntityTick->startTiming();
 		//Update tiles that need update
 		if(\count($this->updateTiles) > 0){
@@ -569,9 +572,11 @@ class Level implements ChunkManager, Metadatable{
 			//Timings::$tickTileEntityTimer->stopTiming();
 		}
 		$this->timings->tileEntityTick->stopTiming();
+
 		$this->timings->doTickTiles->startTiming();
 		$this->tickChunks();
 		$this->timings->doTickTiles->stopTiming();
+
 		if(\count($this->changedCount) > 0){
 			if(\count($this->players) > 0){
 				foreach($this->changedCount as $index => $mini){
@@ -616,7 +621,9 @@ class Level implements ChunkManager, Metadatable{
 			}
 
 		}
+
 		$this->processChunkRequest();
+
 		foreach($this->moveToSend as $index => $entry){
 			Level::getXZ($index, $chunkX, $chunkZ);
 			$pk = new MoveEntityPacket();
@@ -631,9 +638,14 @@ class Level implements ChunkManager, Metadatable{
 			Server::broadcastPacket($this->getChunkPlayers($chunkX, $chunkZ), $pk->setChannel(Network::CHANNEL_MOVEMENT));
 		}
 		$this->motionToSend = [];
+
 		$this->timings->doTick->stopTiming();
 	}
 
+        public function GetChunkPlayers($chunkX, $chunkZ) {
+            return $this->getUsingChunk($chunkX, $chunkZ);
+        }
+        
 	/**
 	 * @param Player[] $target
 	 * @param Block[]  $blocks
@@ -2081,7 +2093,8 @@ class Level implements ChunkManager, Metadatable{
 		}
 
 		$this->cancelUnloadChunkRequest($x, $z);
-
+                
+                if($this->provider == null)return false;
 		$chunk = $this->provider->getChunk($x, $z, $generate);
 		if($chunk !== \null){
 			$this->chunks[$index] = $chunk;

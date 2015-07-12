@@ -836,13 +836,8 @@ abstract class Entity extends Location implements Metadatable{
 			$this->lastMotionX = $this->motionX;
 			$this->lastMotionY = $this->motionY;
 			$this->lastMotionZ = $this->motionZ;
-
-			if($this instanceof Player){
-				$this->motionX = 0;
-				$this->motionY = 0;
-				$this->motionZ = 0;
-			}
-
+                        
+                        //$this->level->addEntityMotion($this->chunk->getX(), $this->chunk->getZ(),$this->id, $this->motionX, $this->motionY, $this->motionZ);
 			foreach($this->hasSpawned as $player){
 				$player->addEntityMotion($this->id, $this->motionX, $this->motionY, $this->motionZ);
 			}
@@ -1424,9 +1419,10 @@ abstract class Entity extends Location implements Metadatable{
 		$this->motionZ = $motion->z;
 
 		if(!$this->justCreated){
-			if($this instanceof Player){
+                    //setMotion
+			/*if($this instanceof Player){
 				$this->addEntityMotion($this->getId(), $this->motionX, $this->motionY, $this->motionZ);
-			}
+			}*/
 			$this->updateMovement();
 		}
 

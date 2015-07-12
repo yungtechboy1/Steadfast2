@@ -1324,12 +1324,17 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 
 	public function setMotion(Vector3 $mot){
 		if(parent::setMotion($mot)){
-			$this->addEntityMotion($this->getId(), $this->motionX, $this->motionY, $this->motionZ);
-			if($this->motionY > 0){
-				$this->startAirTicks = (-(log($this->gravity / ($this->gravity + $this->drag * $this->motionY))) / $this->drag) * 2 + 5;
-			}
-
-			return true;
+                    if($this->chunk !== null){
+                        //$this->level->addEntityMotion($this->chunk->getX(), $this->chunk->getZ(), $this->getId(), $this->motionX, $this->motionY, $this->motionZ);
+                        $this->addEntityMotion($this->getId(), $this->motionX, $this->motionY, $this->motionZ);
+                        /*$pk = new SetEntityMotionPacket();
+                        $pk->entities[] = [$this->getId(), $mot->x, $mot->y, $mot->z];
+                        $this->dataPacket($pk->setChannel(Network::CHANNEL_MOVEMENT));*/
+                        return true;
+                    }
+                    if($this->motionY > 0){
+                        $this->startAirTicks = (-(log($this->gravity / ($this->gravity + $this->drag * $this->motionY))) / $this->drag) * 2 + 5;
+                    }
 		}
 		return false;
 	}
@@ -2947,7 +2952,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 		if($source->isCancelled()){
 			return;
 		}elseif($this->getLastDamageCause() === $source and $this->spawned){
-			$pk = new EntityEventmovePacket();
+			$pk = new EntityEventPacket();
 			$pk->eid = $this->getId();
 			$pk->event = EntityEventPacket::HURT_ANIMATION;
 			$this->dataPacket($pk->setChannel(Network::CHANNEL_WORLD_EVENTS));
