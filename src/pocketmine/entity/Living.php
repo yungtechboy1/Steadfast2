@@ -99,7 +99,7 @@ abstract class Living extends Entity implements Damageable{
 		if($this->attackTime > 0 or $this->noDamageTicks > 0){
 			$lastCause = $this->getLastDamageCause();
 			if($lastCause !== \null and $lastCause->getDamage() >= $damage){
-                $source->setCancelled();
+                            $source->setCancelled();
 			}
 		}
 
@@ -111,10 +111,13 @@ abstract class Living extends Entity implements Damageable{
 
 		if($source instanceof EntityDamageByEntityEvent){
 			$e = $source->getDamager();
+                        if($source instanceof EntityDamageByChildEntityEvent){
+				$e = $source->getChild();
+			}
 			$deltaX = $this->x - $e->x;
 			$deltaZ = $this->z - $e->z;
 			$yaw = \atan2($deltaX, $deltaZ);
-			$this->knockBack($e, $damage,  $deltaX, $deltaZ, $source->getKnockBack());
+			$this->knockBack($e, $damage, sin($yaw), cos($yaw), $source->getKnockBack());
                         
                         if($e->isOnFire() > 0){
 				$this->setOnFire(2 * $this->server->getDifficulty());
@@ -147,6 +150,9 @@ abstract class Living extends Entity implements Damageable{
 		$motion->z += ($z / $f) * $base;
                 echo $motion->x.">>".$motion->y.">>".$motion->z."\n";
 
+		if($motion->x > 1)$motion->x = 1;
+		if($motion->z > 1)$motion->z = 1;
+                
 		if($motion->y > $base){
                     echo $motion->y."TO $base\n";
 			$motion->y = $base;
